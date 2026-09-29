@@ -1,0 +1,12 @@
+idf_component_register(
+    SRCS
+        "app_main.c"
+        "src/acquisition.c"
+        "src/ble_service.c"
+        "src/config_store.c"
+        "src/fault_monitor.c"
+        "src/logger.c"
+        "src/measurement.c"
+    INCLUDE_DIRS "include"
+    REQUIRES bt nvs_flash
+)
