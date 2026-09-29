@@ -1,62 +1,8 @@
 #include "measurement.h"
 #include <math.h>
-
-static uint32_t alarm_flags_for(float v, float i, const measurement_limits_t *limits)
-{
-    uint32_t flags = 0U;
-    if (limits == NULL) return flags;
-    if (v > limits->voltage_limit_v) flags |= (1U << 0);
-    if (i > limits->current_limit_a) flags |= (1U << 1);
-    return flags;
-}
-
-float energy_rms(const float *samples, size_t count)
-{
-    if (samples == NULL || count == 0U) return 0.0f;
-    double sum_sq = 0.0;
-    for (size_t i = 0U; i < count; ++i)
-        sum_sq += (double)samples[i] * (double)samples[i];
-    return (float)sqrt(sum_sq / (double)count);
-}
-
-float energy_apparent_power(float vrms, float irms) { return vrms * irms; }
-
-float energy_active_power(float apparent_va, float power_factor)
-{
-    if (power_factor < 0.0f) power_factor = 0.0f;
-    if (power_factor > 1.0f) power_factor = 1.0f;
-    return apparent_va * power_factor;
-}
-
-float energy_accumulate_wh(float energy_wh, float active_power_w, float dt_seconds)
-{
-    if (dt_seconds <= 0.0f) return energy_wh;
-    return energy_wh + active_power_w * (dt_seconds / 3600.0f);
-}
-
-void energy_build_measurement(
-    const float *voltage_samples,
-    const float *current_samples,
-    size_t count,
-    float power_factor,
-    float previous_energy_wh,
-    float dt_seconds,
-    const measurement_limits_t *limits,
-    uint32_t sample_count,
-    energy_measurement_t *out)
-{
-    if (out == NULL) return;
-    const float v = energy_rms(voltage_samples, count);
-    const float i = energy_rms(current_samples, count);
-    const float s = energy_apparent_power(v, i);
-    const float p = energy_active_power(s, power_factor);
-
-    out->voltage_rms_v = v;
-    out->current_rms_a = i;
-    out->apparent_power_va = s;
-    out->active_power_w = p;
-    out->power_factor = power_factor;
-    out->energy_wh = energy_accumulate_wh(previous_energy_wh, p, dt_seconds);
-    out->sample_count = sample_count;
-    out->alarm_flags = alarm_flags_for(v, i, limits);
-}
+float energy_rms(const float *s,size_t n){if(!s||!n)return 0.0f;double x=0;for(size_t i=0;i<n;i++)x+=(double)s[i]*s[i];return(float)sqrt(x/n);}
+float energy_apparent_power(float v,float i){return v*i;}
+float energy_active_power(float s,float pf){if(pf<0)pf=0;if(pf>1)pf=1;return s*pf;}
+float energy_accumulate_wh(float e,float p,float dt){return dt>0?e+p*dt/3600.0f:e;}
+void energy_build_measurement(const float*v,const float*i,size_t n,float pf,float prev,float dt,const measurement_limits_t*l,uint32_t seq,energy_measurement_t*out){
+if(!out)return;out->voltage_rms_v=energy_rms(v,n);out->current_rms_a=energy_rms(i,n);out->apparent_power_va=energy_apparent_power(out->voltage_rms_v,out->current_rms_a);out->active_power_w=energy_active_power(out->apparent_power_va,pf);out->power_factor=pf;out->energy_wh=energy_accumulate_wh(prev,out->active_power_w,dt);out->sample_count=seq;out->alarm_flags=0;if(l){if(out->voltage_rms_v>l->voltage_limit_v)out->alarm_flags|=1u;if(out->current_rms_a>l->current_limit_a)out->alarm_flags|=2u;}}
