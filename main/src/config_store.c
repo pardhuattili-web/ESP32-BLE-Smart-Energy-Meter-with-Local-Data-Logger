@@ -1,42 +1,6 @@
 #include "config_store.h"
 #include "nvs.h"
-#include "nvs_flash.h"
-
-static const char *NVS_NAMESPACE = "energy";
-
-void config_store_defaults(energy_config_t *config)
-{
-    if (config == NULL) return;
-    config->sample_period_ms = 1000U;
-    config->log_period_ms = 5000U;
-    config->limits.voltage_limit_v = 14.0f;
-    config->limits.current_limit_a = 3.0f;
-}
-
-int config_store_save(const energy_config_t *config)
-{
-    if (config == NULL) return -1;
-
-    nvs_handle_t handle;
-    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);
-    if (err != ESP_OK) return (int)err;
-
-    err = nvs_set_blob(handle, "cfg", config, sizeof(*config));
-    if (err == ESP_OK) err = nvs_commit(handle);
-    nvs_close(handle);
-    return (int)err;
-}
-
-int config_store_load(energy_config_t *config)
-{
-    if (config == NULL) return -1;
-
-    nvs_handle_t handle;
-    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &handle);
-    if (err != ESP_OK) return (int)err;
-
-    size_t size = sizeof(*config);
-    err = nvs_get_blob(handle, "cfg", config, &size);
-    nvs_close(handle);
-    return (err == ESP_OK && size == sizeof(*config)) ? 0 : (int)err;
-}
+#define NS "energy"
+void config_store_defaults(energy_config_t*c){if(!c)return;c->sample_period_ms=1000;c->log_period_ms=5000;c->limits.voltage_limit_v=14.0f;c->limits.current_limit_a=3.0f;}
+int config_store_save(const energy_config_t*c){if(!c)return-1;nvs_handle_t h;esp_err_t e=nvs_open(NS,NVS_READWRITE,&h);if(e!=ESP_OK)return e;e=nvs_set_blob(h,"cfg",c,sizeof(*c));if(e==ESP_OK)e=nvs_commit(h);nvs_close(h);return e;}
+int config_store_load(energy_config_t*c){if(!c)return-1;nvs_handle_t h;esp_err_t e=nvs_open(NS,NVS_READONLY,&h);if(e!=ESP_OK)return e;size_t s=sizeof(*c);e=nvs_get_blob(h,"cfg",c,&s);nvs_close(h);return(e==ESP_OK&&s==sizeof(*c))?0:e;}
